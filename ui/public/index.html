@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="LSM-Tree Storage Engine — Interactive Dashboard for visual exploration, querying, and monitoring.">
+  <title>LSM-Tree Storage Engine — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ============================================================ -->
+  <!-- Header                                                        -->
+  <!-- ============================================================ -->
+  <header id="app-header">
+    <div class="header-content">
+      <div class="logo">
+        <div>
+          <h1>LSM-Tree Storage</h1>
+          <p class="subtitle">Log-Structured Merge-Tree Engine</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-generate" class="btn btn-primary">
+          <span class="btn-icon">🧪</span> Generate Data
+        </button>
+        <button id="btn-refresh" class="btn btn-secondary">
+          <span class="btn-icon">🔄</span> Refresh
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="app-main">
+    <!-- ============================================================ -->
+    <!-- Stats Cards                                                   -->
+    <!-- ============================================================ -->
+    <section id="stats-section" class="section">
+      <h2 class="section-title">Engine Statistics</h2>
+      <div class="stats-grid">
+        <div class="stat-card" id="card-memtable">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-info">
+            <span class="stat-label">MemTable</span>
+            <span class="stat-value" id="stat-memtable-entries">0 entries</span>
+            <span class="stat-sub" id="stat-memtable-size">0 B</span>
+          </div>
+          <div class="stat-bar"><div class="stat-bar-fill" id="memtable-bar"></div></div>
+        </div>
+        <div class="stat-card" id="card-sstables">
+          <div class="stat-icon">💾</div>
+          <div class="stat-info">
+            <span class="stat-label">SSTables</span>
+            <span class="stat-value" id="stat-sstable-count">0</span>
+            <span class="stat-sub" id="stat-sstable-size">0 B</span>
+          </div>
+        </div>
+        <div class="stat-card" id="card-levels">
+          <div class="stat-icon">📊</div>
+          <div class="stat-info">
+            <span class="stat-label">Active Levels</span>
+            <span class="stat-value" id="stat-active-levels">0</span>
+            <span class="stat-sub">out of 5</span>
+          </div>
+        </div>
+        <div class="stat-card" id="card-total">
+          <div class="stat-icon">💿</div>
+          <div class="stat-info">
+            <span class="stat-label">Total Size</span>
+            <span class="stat-value" id="stat-total-size">0 B</span>
+            <span class="stat-sub" id="stat-total-detail">MemTable + SSTables</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- LSM-Tree Visualiser                                           -->
+    <!-- ============================================================ -->
+    <section id="visualiser-section" class="section">
+      <h2 class="section-title">LSM-Tree Levels</h2>
+      <div id="tree-visualiser" class="tree-vis">
+        <div class="tree-level" id="vis-memtable">
+          <div class="level-label">MemTable <span class="level-badge">In-Memory</span></div>
+          <div class="level-bar memtable-bar-vis"></div>
+        </div>
+        <div class="tree-arrow">▼</div>
+        <div id="vis-levels"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Data Inspector                                                 -->
+    <!-- ============================================================ -->
+    <section id="inspector-section" class="section">
+      <h2 class="section-title">Data Inspector</h2>
+
+      <div class="inspector-tabs">
+        <button class="insp-tab active" data-insp="memtable">⚡ MemTable</button>
+        <button class="insp-tab" data-insp="sstables">💾 SSTables</button>
+      </div>
+
+      <!-- MemTable Inspector -->
+      <div class="insp-panel active" id="insp-memtable">
+        <div class="insp-empty" id="memtable-empty">
+          MemTable is <strong>empty</strong> — generate or insert some data
+        </div>
+        <div class="insp-table-wrap" id="memtable-table-wrap" style="display:none">
+          <div class="insp-panel-header">
+            <div class="insp-meta" id="memtable-meta"></div>
+            <button id="btn-flush" class="btn btn-secondary btn-sm">
+              <span class="btn-icon">⚡</span> Flush to Disk
+            </button>
+          </div>
+          <table class="insp-table" id="memtable-data">
+            <thead><tr><th>#</th><th>Key</th><th>Value</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SSTables Inspector -->
+      <div class="insp-panel" id="insp-sstables">
+        <div class="insp-empty" id="sstables-empty">
+          Click <strong>Load Data</strong> to inspect SSTable contents
+        </div>
+        <div id="sstables-list"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Query Console                                                 -->
+    <!-- ============================================================ -->
+    <section id="console-section" class="section">
+      <h2 class="section-title">Query Console</h2>
+
+      <div class="console-tabs">
+        <button class="tab active" data-tab="put">PUT</button>
+        <button class="tab" data-tab="get">GET</button>
+        <button class="tab" data-tab="delete">DELETE</button>
+        <button class="tab" data-tab="scan">SCAN</button>
+      </div>
+
+      <!-- PUT -->
+      <div class="tab-panel active" id="panel-put">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="put-key">Key</label>
+            <input type="text" id="put-key" placeholder="e.g. user:1001">
+          </div>
+          <div class="form-group">
+            <label for="put-value">Value</label>
+            <input type="text" id="put-value" placeholder="e.g. Alice">
+          </div>
+          <button class="btn btn-primary" id="btn-put">
+            <span class="btn-icon">➕</span> Put
+          </button>
+        </div>
+      </div>
+
+      <!-- GET -->
+      <div class="tab-panel" id="panel-get">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="get-key">Key</label>
+            <input type="text" id="get-key" placeholder="e.g. user:1001">
+          </div>
+          <button class="btn btn-primary" id="btn-get">
+            <span class="btn-icon">🔍</span> Get
+          </button>
+        </div>
+      </div>
+
+      <!-- DELETE -->
+      <div class="tab-panel" id="panel-delete">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="delete-key">Key</label>
+            <input type="text" id="delete-key" placeholder="e.g. user:1001">
+          </div>
+          <button class="btn btn-danger" id="btn-delete">
+            <span class="btn-icon">🗑️</span> Delete
+          </button>
+        </div>
+      </div>
+
+      <!-- SCAN -->
+      <div class="tab-panel" id="panel-scan">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="scan-start">Start Key</label>
+            <input type="text" id="scan-start" placeholder="e.g. user:0001">
+          </div>
+          <div class="form-group">
+            <label for="scan-end">End Key</label>
+            <input type="text" id="scan-end" placeholder="e.g. user:9999">
+          </div>
+          <button class="btn btn-primary" id="btn-scan">
+            <span class="btn-icon">📋</span> Scan
+          </button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="console-output" class="console-output">
+        <div class="output-placeholder">
+          Results will appear here…
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
