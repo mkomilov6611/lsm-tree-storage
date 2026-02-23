@@ -4,8 +4,8 @@ A fully functional **Log-Structured Merge-Tree** key-value storage engine built 
 
 ```
                       ┌──────────────────────────────────┐
-                      │           Client API              │
-                      │   put · get · delete · scan       │
+                      │           Client API             │
+                      │   put · get · delete · scan      │
                       └───────────────┬──────────────────┘
                                       │
                 ┌─────────────────────┼─────────────────────┐
